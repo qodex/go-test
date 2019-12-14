@@ -6,62 +6,52 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
 
 	"github.com/gorilla/mux"
 )
 
-var articles []Article
+var articlesDao ArticleDAO
 
 func articlesHandler(w http.ResponseWriter, r *http.Request) {
 	var article Article
 	reqBody, _ := ioutil.ReadAll(r.Body)
 	json.Unmarshal(reqBody, &article)
-	articles = append(articles, article)
-	json, _ := json.Marshal(articles)
-	fmt.Fprintf(w, string(json))
+	articleID, e := articlesDao.SaveArticle(article)
+	if e == nil {
+		fmt.Fprintf(w, articleID)
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, e.Error())
+	}
 }
 
 func getArticle(w http.ResponseWriter, r *http.Request) {
 	articleID := mux.Vars(r)["id"]
-	var article Article
-	for _, a := range articles {
-		if a.ID == articleID {
-			article = a
-		}
+	article, e := articlesDao.GetArticle(articleID)
+	if e == nil {
+		json, _ := json.Marshal(article)
+		fmt.Fprintf(w, string(json))
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprintf(w, e.Error())
 	}
-	json, _ := json.Marshal(article)
-	fmt.Fprintf(w, string(json))
 }
 
 func findByTagAndDate(w http.ResponseWriter, r *http.Request) {
 	tagParam := mux.Vars(r)["tag"]
 	dateParam := mux.Vars(r)["date"]
-
-	response := FindResponse{}
-	response.Tag = tagParam
-	response.Count = 0
-	response.Articles = make([]string, 0, 100)
-	response.RelatedTags = make([]string, 0, 100)
-
-	for _, a := range articles {
-		dateStr := strings.ReplaceAll(a.Date, "-", "")
-		if dateStr == dateParam {
-			response.RelatedTags = MergeUnique(response.RelatedTags, a.Tags, tagParam)
-			if Contains(a.Tags, tagParam) {
-				response.Count = response.Count + 1
-				response.Articles = append(response.Articles, a.ID)
-			}
-		}
+	response, e := articlesDao.FindByTagAndDate(tagParam, dateParam)
+	if e == nil {
+		json, _ := json.Marshal(response)
+		fmt.Fprintf(w, string(json))
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, e.Error())
 	}
-
-	json, _ := json.Marshal(response)
-
-	fmt.Fprintf(w, string(json))
 }
 
 func main() {
-	articles = make([]Article, 0, 1000)
+	articlesDao = new(ArticleDAOInMem)
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/articles", articlesHandler).Methods("POST")
 	router.HandleFunc("/articles/{id}", getArticle).Methods("GET")

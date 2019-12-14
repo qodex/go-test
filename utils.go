@@ -1,5 +1,7 @@
 package main
 
+import "strconv"
+
 //Contains returns true if provided slice of strings contains provided string
 func Contains(s []string, e string) bool {
 	for _, a := range s {
@@ -18,4 +20,13 @@ func MergeUnique(s1 []string, s2 []string, exclude string) []string {
 		}
 	}
 	return s1
+}
+
+//IsDateParamValid validates date param
+func IsDateParamValid(date string) bool {
+	_, e := strconv.Atoi(date)
+	if e == nil {
+		return true
+	}
+	return false
 }
