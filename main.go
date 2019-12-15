@@ -50,11 +50,17 @@ func findByTagAndDate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func main() {
+func init() {
+	fmt.Println("Starting articles service...")
 	articlesDao = new(ArticleDAOInMem)
+}
+
+func main() {
+	port := ":8080"
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/articles", articlesHandler).Methods("POST")
 	router.HandleFunc("/articles/{id}", getArticle).Methods("GET")
 	router.HandleFunc("/tags/{tag}/{date}", findByTagAndDate).Methods("GET")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	fmt.Println("Started on port ", port)
+	log.Fatal(http.ListenAndServe(port, router))
 }
