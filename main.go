@@ -8,12 +8,13 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/qodex/articledao"
 )
 
-var articlesDao ArticleDAO
+var articlesDao articledao.ArticleDAO
 
 func articlesHandler(w http.ResponseWriter, r *http.Request) {
-	var article Article
+	var article articledao.Article
 	reqBody, _ := ioutil.ReadAll(r.Body)
 	json.Unmarshal(reqBody, &article)
 	articleID, e := articlesDao.SaveArticle(article)
@@ -52,7 +53,7 @@ func findByTagAndDate(w http.ResponseWriter, r *http.Request) {
 
 func init() {
 	fmt.Println("Starting articles service...")
-	articlesDao = new(ArticleDAOInMem)
+	articlesDao = new(articledao.ArticleDAOInMem)
 }
 
 func main() {
